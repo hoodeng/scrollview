@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="LoopScrollView">
+        <attr name="lsv_outerSpace" format="dimension|float" />
+        <attr name="lsv_innerSpace" format="dimension|float" />
+        <attr name="lsv_moveupSpace" format="dimension|float" />
+    </declare-styleable>
+</resources>
