@@ -39,7 +39,16 @@ public class MainActivity extends AppCompatActivity {
         imageViewScrollView.startAnimator();
 
         textViewScrollView.shouldLoopPlayModels(Week);
-        textViewScrollView.startAnimator();
+
+        findViewById(R.id.play).setOnClickListener(v -> {
+            if (textViewScrollView.isPlaying()) {
+                textViewScrollView.stopAnimator();
+                imageViewScrollView.stopAnimator();
+            } else {
+                textViewScrollView.startAnimator();
+                imageViewScrollView.startAnimator();
+            }
+        });
     }
 
     @Override

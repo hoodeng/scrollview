@@ -12,6 +12,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.teng.loopimage.R;
 
@@ -37,10 +38,14 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
     private LinkedList<T> mModelQueue = new LinkedList<>();
 
     private Handler mHandler = new Handler();
+    private boolean mIsPlaying;
+    private Rect mOriginRect;
 
     private Runnable mLooperRunnable = new Runnable() {
         @Override
         public void run() {
+            if (!mIsPlaying) return;
+
             palyAnimator();
             mHandler.postDelayed(mLooperRunnable, ANIMATOR_LOOPER_DELAY);
         }
@@ -88,6 +93,16 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
         }
     }
 
+    private void relativedRect(V v, Rect target) {
+        Rect origin = getOriginArchorRect();
+        v.setTranslationX(target.left - origin.left);
+        v.setTranslationY(target.top - origin.top);
+    }
+
+    private Rect getOriginArchorRect() {
+        return mOriginRect;
+    }
+
     protected abstract void drawView(V v, T t);
 
     protected abstract V createView();
@@ -98,6 +113,8 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
         T t = mModelQueue.poll();
         mModelQueue.offer(t);
 
+        v.setTranslationX(0);
+        v.setTranslationX(0);
         drawView(v, t);
     }
 
@@ -111,8 +128,18 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
 
     public void startAnimator() {
         if (mModelQueue.size() >= IMAGEVIEW_QUEUE_SIZE) { //如果model队列小于5，无需循环
+            mIsPlaying = true;
             mHandler.postDelayed(mLooperRunnable, ANIMATOR_LOOPER_DELAY);
         }
+    }
+
+    public void stopAnimator() {
+        mIsPlaying = false;
+        mHandler.removeCallbacks(mLooperRunnable);
+    }
+
+    public boolean isPlaying() {
+        return mIsPlaying;
     }
 
     private void palyAnimator() {
@@ -121,8 +148,13 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
             V v = mImageViewQueue.get(i);
             Rect target = mAnchorRects.get(i);
             Rect origin = mAnchorRects.get(i + 1);
-            ObjectAnimator animatorX = ObjectAnimator.ofFloat(v, "translationX", v.getTranslationX(), target.left - origin.left);
-            ObjectAnimator animatorY = ObjectAnimator.ofFloat(v, "translationY", v.getTranslationY(), target.top - origin.top);
+//            if (v instanceof TextView) {
+//                Log.v(TAG, "palyAnimator translationX---> " + ((TextView) v).getText() + "  " + v.getTranslationX());
+//                Log.v(TAG, "palyAnimator translationY---> " + ((TextView) v).getText() + "  " + v.getTranslationY());
+//            }
+
+            ObjectAnimator animatorX = ObjectAnimator.ofFloat(v, "translationX", v.getTranslationX(), v.getTranslationX() + target.left - origin.left);
+            ObjectAnimator animatorY = ObjectAnimator.ofFloat(v, "translationY", v.getTranslationY(), v.getTranslationY() + target.top - origin.top);
             animators.add(animatorX);
             animators.add(animatorY);
         }
@@ -135,9 +167,7 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-
                 prepareNextPlay();
-                requestLayout();
             }
         });
         animatorSet.start();
@@ -176,17 +206,18 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         Log.v(TAG, "onLayout");
+        Rect rect = getOriginArchorRect();//右边
         for (int i = 0, size = mImageViewQueue.size(); i < size; i++) {
             V v = mImageViewQueue.get(i);
-            Rect rect = mAnchorRects.get(i + 1);
             layoutImageView(v, rect);
+            relativedRect(v, mAnchorRects.get(i + 1));
         }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        mHandler.removeCallbacks(mLooperRunnable);
+        stopAnimator();
     }
 
     private void layoutImageView(V v, Rect rect) {
@@ -194,8 +225,6 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
         lp.width = rect.right - rect.left;
         lp.height = rect.bottom - rect.top;
         v.setLayoutParams(lp);
-        v.setTranslationX(0);
-        v.setTranslationY(0);
         v.layout(rect.left, rect.top, rect.right, rect.bottom);
     }
 
@@ -232,6 +261,8 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
         top = mMoveupSpace;
         rect = new Rect(left, top, left + rectW, top + rectW);
         mAnchorRects.add(rect);
+
+        mOriginRect = rect;
     }
 
     public void setOuterSpace(int outerSpace) {
