@@ -154,8 +154,16 @@ public abstract class LoopScrollView<V extends View, T> extends ViewGroup {
         int childW = (width - 2 * mOuterSpace - 3 * mInnerSpace) / 4;
         int childH = childW;
 
+        for (int i = 0, size = getChildCount(); i < size; i++) {
+            View child = getChildAt(i);
+            child.measure(getChildMeasureSpec(childW, MeasureSpec.EXACTLY), getChildMeasureSpec(childH, MeasureSpec.EXACTLY));
+        }
         int height = childH + mMoveupSpace;
         setMeasuredDimension(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY));
+    }
+
+    private int getChildMeasureSpec(int childSpecSize, int childSpecMode) {
+        return MeasureSpec.makeMeasureSpec(childSpecSize, childSpecMode);
     }
 
     @Override
